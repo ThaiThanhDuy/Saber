@@ -33,13 +33,13 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  cupertino_icons: ^1.0.5
+  cupertino_icons: ^2.0.0
   material_symbols_icons: ^4.2758.0
 
   sbn:
     path: packages/sbn
 
-  dynamic_color: ^1.5.4
+  dynamic_color: ^2.1.0
 
   flutter_staggered_grid_view: ^0.7.0
 
@@ -50,9 +50,9 @@ dependencies:
 
   path_provider: ^2.0.11
 
-  flutter_secure_storage: ^11.0.0
+  flutter_secure_storage: ^11.2.0
 
-  url_launcher: ^6.1.8
+  url_launcher: ^6.3.3
 
   nextcloud: ^9.0.0
 
@@ -62,7 +62,7 @@ dependencies:
 
   intl: any
 
-  crypto: ^3.0.2
+  crypto: ^3.0.8
   encrypt: ^5.0.1
 
   http: ^1.1.0
@@ -70,18 +70,18 @@ dependencies:
   keybinder: ^1.0.1
 
   pdf: ^3.8.4
-  share_plus: ^13.3.0
+  share_plus: ^13.3.1
   file_picker: ^12.0.0
-  android_file_picker:
-  saf_util: ^3.1.0
-  saf_stream: 4.0.0 # 4.0.1 requires jni ^1.0.2, incompatible with sentry_flutter's jni 0.14.2
+  android_file_picker: 1.1.1
+  saf_util: ^3.1.1
+  saf_stream: 4.0.3 # 4.0.1 requires jni ^1.0.2, incompatible with sentry_flutter's jni 0.14.2
 
   regexed_validator: ^2.0.0+1
 
-  slang: ^4.12.1
+  slang: ^4.19.2
   slang_flutter:
 
-  flex_color_picker: ^3.4.1
+  flex_color_picker: ^4.0.0
 
   font_awesome_flutter: ^11.0.0
 
@@ -89,21 +89,21 @@ dependencies:
 
   defer_pointer: ^0.0.2
 
-  permission_handler: ^13.0.0
+  permission_handler: ^13.0.2
   saver_gallery: ^5.1.0
 
-  animations: ^2.0.7
+  animations: ^3.0.0
 
-  flutter_quill: ^11.5.1
+  flutter_quill: ^11.6.0
 
   window_manager: ^0.5.1
 
   worker_manager: ^7.0.1
-  workmanager: ^0.10.7
+  workmanager: ^0.10.10
 
   archive: ^4.0.3
 
-  shared_preferences: ^2.5.3
+  shared_preferences: ^2.5.6
 
   flutter_sharing_intent: ^2.0.4
 
@@ -130,7 +130,7 @@ dependencies:
 
   fixnum: ^1.1.0
 
-  device_info_plus: ^13.2.0
+  device_info_plus: ^13.3.0
 
   yaru: ^10.2.0
 
@@ -156,14 +156,14 @@ dependencies:
   stow_secure: ^0.7.0
   stow_codecs: ^1.4.0
 
-  sentry_flutter: ^9.21.0
-  sentry_logging: ^9.5.0
+  sentry_flutter: ^10.2.0
+  sentry_logging: ^10.2.0
 
   background_downloader: ^9.2.6
 
   flutter_hooks: ^0.21.3+1
   dynamic_yaru: ^0.2.0
-  image: ^4.8.0
+  image: ^4.11.0
   pool: ^1.5.2
 
 dev_dependencies:
@@ -183,7 +183,7 @@ dev_dependencies:
 
   yaml: ^3.1.2
 
-  golden_screenshot: ^11.1.0
+  golden_screenshot: ^12.1.1
 
   sentry_dart_plugin: ^3.1.1
 
