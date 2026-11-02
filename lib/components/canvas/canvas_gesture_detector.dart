@@ -642,6 +642,20 @@ class _PagesBuilder extends StatelessWidget {
             : placeholderPageBuilder(context, pageIndex),
       );
 
+      if (!shouldRender) {
+        // Start decoding this page's images/PDFs a screen-height ahead of
+        // when it actually scrolls into view, so they're ready by then.
+        final lookahead = boundingBox.height;
+        final isNearViewport =
+            boundingBox.bottom + lookahead >= topOfPage &&
+            boundingBox.top - lookahead <= bottomOfPage;
+        if (isNearViewport) {
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => page.precacheImages(context),
+          );
+        }
+      }
+
       children.add(const SizedBox.square(dimension: Editor.gapBetweenPages));
 
       topOfPage = bottomOfPage + Editor.gapBetweenPages;

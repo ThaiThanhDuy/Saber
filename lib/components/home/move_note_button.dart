@@ -65,12 +65,12 @@ class _MoveNoteDialogState extends State<_MoveNoteDialog> {
       .map((name) => false)
       .toList();
   Future<void> findOldExtensions() async {
-    oldExtensions = [
+    oldExtensions = await Future.wait([
       for (int i = 0; i < widget.filesToMove.length; ++i)
         FileManager.doesFileExist(
           '${widget.filesToMove[i]}${Editor.extensionOldJson}',
         ),
-    ];
+    ]);
   }
 
   late String _currentFolder;
@@ -171,6 +171,10 @@ class _MoveNoteDialogState extends State<_MoveNoteDialog> {
                 slivers: [
                   GridFolders(
                     isAtRoot: currentFolder == '/',
+                    parentPath: currentFolder.substring(
+                      0,
+                      currentFolder.length - 1,
+                    ),
                     crossAxisCount: 3,
                     onTap: (String folder) {
                       setState(() {

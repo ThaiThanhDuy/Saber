@@ -30,8 +30,9 @@ void main() async {
     final client = SaberSyncInterface.client!;
     await client.loadEncryptionKey();
 
-    final localFile = FileManager.getFile('/helloworld${randomString(10)}.txt');
-    final syncFile = await syncer.interface.getSyncFileFromLocalFile(localFile);
+    final relPath = '/helloworld${randomString(10)}.txt';
+    final localFile = FileManager.getFile(relPath);
+    final syncFile = await syncer.interface.getSyncFileFromLocalFile(relPath);
     printOnFailure(syncFile.toString());
     expect(syncFile.remotePath, matches(RegExp(r'^Saber/[a-zA-Z0-9]+\.sbe$')));
 

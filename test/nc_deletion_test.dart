@@ -38,7 +38,7 @@ void main() {
 
     const fileContent = <int>[1, 2, 3];
     final syncFile = await const SaberSyncInterface().getSyncFileFromLocalFile(
-      FileManager.getFile(filePathLocal),
+      filePathLocal,
     );
 
     // Create a file (to delete later)
@@ -88,7 +88,7 @@ void main() {
     await syncer.downloader.waitUntilEmpty();
 
     // Check that the file is deleted locally
-    final exists = FileManager.doesFileExist(filePathLocal);
+    final exists = await FileManager.doesFileExist(filePathLocal);
     expect(exists, false, reason: 'File is not deleted locally');
   }, retry: 2);
 }

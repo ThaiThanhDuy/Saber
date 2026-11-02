@@ -1,6 +1,3 @@
-import 'dart:io';
-
-import 'package:android_file_picker/android_file_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -11,6 +8,7 @@ import 'package:saber/data/file_manager/file_manager.dart';
 import 'package:saber/data/nextcloud/saber_syncer.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/i18n/strings.g.dart';
+import 'package:saf_util/saf_util.dart';
 import 'package:sbn/font_fallbacks.dart';
 
 class SettingsDirectorySelector extends StatelessWidget {
@@ -28,10 +26,11 @@ class SettingsDirectorySelector extends StatelessWidget {
   final bool isUnsupported;
 
   void onPressed(BuildContext context) async {
-    final oldDir = Directory(FileManager.documentsDirectory);
-    final oldDirIsEmpty = oldDir.existsSync()
-        ? oldDir.listSync().isEmpty
-        : true;
+    final oldDirIsEmpty = await FileManager.isDirEmpty(
+      FileManager.documentsDirectory,
+    );
+
+    if (!context.mounted) return;
     await showAdaptiveDialog(
       context: context,
       builder: (context) => DirectorySelector(
@@ -97,26 +96,28 @@ class _DirectorySelectorState extends State<DirectorySelector> {
   late var _isEmpty = true;
 
   Future<void> _pickDir() async {
-    final directory = await FilePicker.getDirectoryPath(
-      dialogTitle: widget.title,
-      initialDirectory: _directory,
-      androidOptions: defaultTargetPlatform == .android
-          ? const FilePickerAndroidOptions(
-              safOptions: .new(
-                grant: .lifetime,
-                accessMode: .readWrite,
-                persistGrant: true,
-              ),
-            )
-          : const .new(),
-    );
+    final String? directory;
+    if (defaultTargetPlatform == .android) {
+      // On Android, a folder outside the app's own storage is only
+      // accessible through the Storage Access Framework (a persisted
+      // content:// tree grant), never a real filesystem path.
+      final picked = await SafUtil().pickDirectory(
+        writePermission: true,
+        persistablePermission: true,
+      );
+      directory = picked?.uri;
+    } else {
+      directory = await FilePicker.getDirectoryPath(
+        dialogTitle: widget.title,
+        initialDirectory: _directory,
+      );
+    }
 
     if (directory == null) return;
     if (directory == _directory) return;
 
-    final dir = Directory(directory);
     _directory = directory;
-    _isEmpty = dir.existsSync() ? dir.listSync().isEmpty : true;
+    _isEmpty = await FileManager.isDirEmpty(directory);
 
     if (!mounted) return;
 
@@ -126,9 +127,8 @@ class _DirectorySelectorState extends State<DirectorySelector> {
   Future<void> _pickDefaultDir() async {
     final directory = await FileManager.getDefaultDocumentsDirectory();
 
-    final dir = Directory(directory);
     _directory = directory;
-    _isEmpty = dir.existsSync() ? dir.listSync().isEmpty : true;
+    _isEmpty = await FileManager.isDirEmpty(directory);
 
     if (!mounted) return;
     setState(() {});

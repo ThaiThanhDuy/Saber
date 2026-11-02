@@ -279,6 +279,26 @@ class EditorPage extends ChangeNotifier implements HasSize {
     notifyListeners();
   }
 
+  var _imagesPrecached = false;
+
+  /// Starts loading this page's images/PDFs ahead of time (see
+  /// [EditorImage.loadIn] and [EditorImage.precache]), so they're already
+  /// decoded by the time the page actually scrolls into view and gets
+  /// rendered for real.
+  ///
+  /// Safe to call repeatedly — only does work the first time, since
+  /// [EditorImage.loadIn]/[EditorImage.precache] are themselves idempotent
+  /// but there's no need to re-iterate every scroll frame.
+  void precacheImages(BuildContext context) {
+    if (_imagesPrecached) return;
+    _imagesPrecached = true;
+
+    for (final image in [...images, ?backgroundImage]) {
+      unawaited(image.loadIn());
+      if (context.mounted) unawaited(image.precache(context));
+    }
+  }
+
   /// Updates the `pageIndex` fields of this page's strokes/images.
   void updatePageIndex(int pageIndex) {
     for (final stroke in strokes) stroke.pageIndex = pageIndex;

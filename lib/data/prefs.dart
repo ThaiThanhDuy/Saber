@@ -350,6 +350,15 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
+  /// Custom colors for folders in the browse page,
+  /// mapping folder paths (e.g. `/Folder/Subfolder`) to ARGB colors.
+  final folderColors = PlainStow.json(
+    'folderColors',
+    const <String, int>{},
+    fromJson: (json) => (json as Map).cast<String, int>(),
+    volatile: !_isOnMainIsolate,
+  );
+
   /// File paths that have been deleted locally
   final fileSyncAlreadyDeleted = PlainStow(
     'fileSyncAlreadyDeleted',
@@ -402,6 +411,65 @@ class Stows {
     codec: SentryConsent.codec,
     volatile: !_isOnMainIsolate,
   );
+
+  /// The stows included in a backup (see `BackupManager`).
+  ///
+  /// Secure stows (credentials, encryption keys) are deliberately excluded,
+  /// as are device-specific values like [customDataDir] and sync state.
+  late final List<PlainStow> backupStows = [
+    pfp,
+    syncInBackground,
+    appTheme,
+    platform,
+    layoutSize,
+    accentColor,
+    hyperlegibleFont,
+    editorToolbarAlignment,
+    editorToolbarShowInFullscreen,
+    editorFingerDrawing,
+    editorAutoInvert,
+    preferGreyscale,
+    editorPromptRename,
+    autosaveDelay,
+    shapeRecognitionDelay,
+    autoStraightenLines,
+    printPageIndicators,
+    maxImageSize,
+    autoClearWhiteboardOnExit,
+    disableEraserAfterUse,
+    hideFingerDrawingToggle,
+    autoDisableFingerDrawingWhenStylusDetected,
+    recentColorsChronological,
+    recentColorsPositioned,
+    pinnedColors,
+    recentColorsDontSavePresets,
+    recentColorsLength,
+    lastTool,
+    lastFountainPenOptions,
+    lastBallpointPenOptions,
+    lastHighlighterOptions,
+    lastPencilOptions,
+    lastShapePenOptions,
+    lastFountainPenColor,
+    lastBallpointPenColor,
+    lastHighlighterColor,
+    lastPencilColor,
+    lastShapePenColor,
+    lastBackgroundPattern,
+    lastLineHeight,
+    lastLineThickness,
+    lastZoomLock,
+    lastSingleFingerPanLock,
+    lastAxisAlignedPanLock,
+    homeLayout,
+    browseSortMetric,
+    recentFiles,
+    folderColors,
+    shouldCheckForUpdates,
+    shouldAlwaysAlertForUpdates,
+    locale,
+    sentryConsent,
+  ];
 
   @pragma('vm:platform-const')
   static final isDesktop =

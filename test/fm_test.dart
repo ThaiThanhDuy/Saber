@@ -308,18 +308,41 @@ void main() {
       await file.create(recursive: true);
 
       // verify isDirectory
-      expect(FileManager.isDirectory(dirPath), true);
-      expect(FileManager.isDirectory(filePath), false);
-      expect(FileManager.isDirectory(nonExistentPath), false);
+      expect(await FileManager.isDirectory(dirPath), true);
+      expect(await FileManager.isDirectory(filePath), false);
+      expect(await FileManager.isDirectory(nonExistentPath), false);
 
       // verify doesFileExist
-      expect(FileManager.doesFileExist(filePath), true);
-      expect(FileManager.doesFileExist(dirPath), false);
-      expect(FileManager.doesFileExist(nonExistentPath), false);
+      expect(await FileManager.doesFileExist(filePath), true);
+      expect(await FileManager.doesFileExist(dirPath), false);
+      expect(await FileManager.doesFileExist(nonExistentPath), false);
 
       // delete directory and file
       await dir.delete(recursive: true);
       await file.delete();
+    });
+
+    test('folder colors follow renames and deletes', () async {
+      const dirPath = '/test_folderColors';
+      const renamedPath = '/test_folderColors_renamed';
+      await Directory('$rootDir$dirPath/sub').create(recursive: true);
+      stows.folderColors.value = {
+        dirPath: 0xffff0000,
+        '$dirPath/sub': 0xff00ff00,
+        '/test_folderColorsOther': 0xff0000ff,
+      };
+
+      await FileManager.renameDirectory(dirPath, 'test_folderColors_renamed');
+      expect(stows.folderColors.value, {
+        renamedPath: 0xffff0000,
+        '$renamedPath/sub': 0xff00ff00,
+        '/test_folderColorsOther': 0xff0000ff,
+      });
+
+      await FileManager.deleteDirectory(renamedPath);
+      expect(stows.folderColors.value, {'/test_folderColorsOther': 0xff0000ff});
+
+      stows.folderColors.value = const {};
     });
   });
 }

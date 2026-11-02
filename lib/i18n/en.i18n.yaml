@@ -69,6 +69,9 @@ home:
     deleteName: Delete $f
     delete: Delete
     alsoDeleteContents: Also delete all notes inside this folder
+  folderColor:
+    changeColor: Change folder color
+    reset: Default
   sort:
     sortBy: Sort by
     nameAToZ: Name (A-Z)
@@ -171,12 +174,22 @@ settings:
     button: Reset
   resyncEverything: Resync everything
   openDataDir: Open Saber folder
+  backup:
+    exportBackup: Export backup
+    exportBackupDescription: Save all notes and settings to a zip file
+    importBackup: Import backup
+    importBackupDescription: Restore notes and settings from a backup file
+    importConfirm: Notes with the same name will be overwritten and your settings will be replaced. Login details are not included in backups.
+    exporting: Creating backup...
+    importing: Restoring backup...
+    importSuccess: Backup restored
+    importFailed: The selected file is not a valid Saber backup
   customDataDir:
     cancel: Cancel
     select: Select
     mustBeEmpty: Selected folder must be empty
     mustBeDoneSyncing: Make sure syncing is complete before changing the folder
-    unsupported: This feature is currently only for developers. Using it will likely result in data loss.
+    unsupported: Your existing notes will be moved to the new location. Choosing a folder on external storage (e.g. an SD card) may make saving slower.
   autosaveDisabled: Never
   shapeRecognitionDisabled: Never
 logs:

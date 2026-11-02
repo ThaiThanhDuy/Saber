@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:saber/components/canvas/_asset_cache.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
 import 'package:saber/components/theming/adaptive_switch.dart';
@@ -75,7 +76,10 @@ class _CanvasImageDialogState extends State<CanvasImageDialog> {
             case final PdfEditorImage image:
               bytes =
                   image.pdfBytes ??
-                  await image.pdfFile?.readAsBytes() ??
+                  await image.externalSourceFile?.readAsBytes() ??
+                  (image.pdfRelPath != null
+                      ? await FileManager.readFile(image.pdfRelPath!)
+                      : null) ??
                   (throw ArgumentError.value(
                     image,
                     'image',
@@ -86,7 +90,8 @@ class _CanvasImageDialogState extends State<CanvasImageDialog> {
                 (final SvgStringLoader loader) => utf8.encode(
                   loader.provideSvg(null),
                 ),
-                (final SvgFileLoader loader) => await loader.file.readAsBytes(),
+                (final SaberSvgAssetLoader loader) =>
+                  await FileManager.readFile(loader.relPath) ?? Uint8List(0),
                 (_) => throw ArgumentError.value(
                   image.svgLoader,
                   'svgLoader',
@@ -96,9 +101,12 @@ class _CanvasImageDialogState extends State<CanvasImageDialog> {
             case final PngEditorImage image:
               if (image.imageProvider is MemoryImage) {
                 bytes = (image.imageProvider as MemoryImage).bytes;
-              } else if (image.imageProvider is FileImage) {
-                bytes = await (image.imageProvider as FileImage).file
-                    .readAsBytes();
+              } else if (image.imageProvider is SaberAssetImageProvider) {
+                bytes =
+                    await FileManager.readFile(
+                      (image.imageProvider as SaberAssetImageProvider).relPath,
+                    ) ??
+                    Uint8List(0);
               } else {
                 throw ArgumentError.value(
                   image.imageProvider,

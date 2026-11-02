@@ -15,20 +15,20 @@ import 'package:saber/data/prefs.dart';
 import 'package:saber/pages/editor/editor.dart';
 import 'package:worker_manager/worker_manager.dart';
 
-final syncer = Syncer<SaberSyncInterface, SaberSyncFile, File, WebDavFile>(
+final syncer = Syncer<SaberSyncInterface, SaberSyncFile, String, WebDavFile>(
   const SaberSyncInterface(),
   failureTimeout: const Duration(seconds: 4),
 );
 
 class const SaberSyncInterface()
-    extends AbstractSyncInterface<SaberSyncFile, File, WebDavFile> {
+    extends AbstractSyncInterface<SaberSyncFile, String, WebDavFile> {
   static final log = Logger('SaberSyncInterface');
 
   @override
   bool areRemoteFilesEqual(WebDavFile a, WebDavFile b) => a.path == b.path;
 
   @override
-  bool areLocalFilesEqual(File a, File b) => a.path == b.path;
+  bool areLocalFilesEqual(String a, String b) => a == b;
 
   @override
   Future<List<SaberSyncFile>> findLocalChanges() async {
@@ -38,11 +38,11 @@ class const SaberSyncInterface()
     }
 
     final syncFiles = <SaberSyncFile>[];
-    await for (final localFile in FileManager.getRootDirectory().list(
-      recursive: true,
-    )) {
-      if (localFile is! File) continue;
-
+    final localFiles = await FileManager.getAllFiles(
+      includeExtensions: true,
+      includeAssets: true,
+    );
+    for (final localFile in localFiles) {
       final syncFile = await getSyncFileFromLocalFile(localFile);
 
       final bestFile = await getBestFile(
@@ -104,16 +104,16 @@ class const SaberSyncInterface()
 
     // Prioritize note.sbn2.p over note.sbn2 (so the preview is updated first)
     final previewSyncFiles = changedFiles
-        .where((syncFile) => syncFile.localFile.path.endsWith('.p'))
+        .where((syncFile) => syncFile.localFile.endsWith('.p'))
         .toList(growable: false);
     for (final previewSyncFile in previewSyncFiles) {
       final previewSyncFileIndex = changedFiles.indexOf(previewSyncFile);
       final mainSyncFileIndex = changedFiles.indexWhere(
         (syncFile) =>
-            syncFile.localFile.path ==
-            previewSyncFile.localFile.path.substring(
+            syncFile.localFile ==
+            previewSyncFile.localFile.substring(
               0,
-              previewSyncFile.localFile.path.length - 2,
+              previewSyncFile.localFile.length - 2,
             ),
       );
       if (previewSyncFileIndex <= -1 || mainSyncFileIndex <= -1) continue;
@@ -133,11 +133,8 @@ class const SaberSyncInterface()
   }
 
   @override
-  Future<SaberSyncFile> getSyncFileFromLocalFile(File localFile) async {
-    final relativePath = localFile.path
-        .substring(FileManager.documentsDirectory.length)
-        // Compensate for Windows using backslashes
-        .replaceAll(Platform.pathSeparator, '/');
+  Future<SaberSyncFile> getSyncFileFromLocalFile(String localFile) async {
+    final relativePath = localFile;
 
     assert(relativePath.startsWith('/'));
     final encryptedName = await encryptPath(client, relativePath);
@@ -160,14 +157,13 @@ class const SaberSyncInterface()
     final relativeLocalPath = await decryptPath(client!, remoteFile.path.path);
     if (relativeLocalPath == null)
       throw Exception('Decryption failed for ${remoteFile.path.path}');
-    final localFile = FileManager.getFile(relativeLocalPath);
 
-    return SaberSyncFile(remoteFile: remoteFile, localFile: localFile);
+    return SaberSyncFile(remoteFile: remoteFile, localFile: relativeLocalPath);
   }
 
   @override
   Future<Uint8List> downloadRemoteFile(SaberSyncFile file) async {
-    if (file.localFile.path.endsWith(NextcloudClientExtension.configFileName)) {
+    if (file.localFile.endsWith(NextcloudClientExtension.configFileName)) {
       // Config file changed
       try {
         _client!.loadEncryptionKey(generateKeyIfMissing: false);
@@ -197,7 +193,7 @@ class const SaberSyncInterface()
     Uint8List encryptedBytes, {
     @visibleForTesting bool awaitWrite = false,
   }) async {
-    if (file.localFile.path == NextcloudClientExtension.configFileName) {
+    if (file.localFile == NextcloudClientExtension.configFileName) {
       // Config file changed, already handled in [downloadRemoteFile]
       return;
     }
@@ -218,7 +214,7 @@ class const SaberSyncInterface()
     final iv = IV.fromBase64(stows.iv.value);
 
     final decryptedData = await workerManager.execute(
-      file.localFile.path.endsWith(Editor.extensionOldJson)
+      file.localFile.endsWith(Editor.extensionOldJson)
           ? () async {
               final encrypted = utf8.decode(encryptedBytes.cast<int>());
               final decrypted = encrypter.decrypt64(encrypted, iv: iv);
@@ -247,9 +243,8 @@ class const SaberSyncInterface()
 
   @override
   Future<Uint8List> readLocalFile(SaberSyncFile file) async {
-    final decryptedBytes = file.localFile.existsSync()
-        ? await file.localFile.readAsBytes()
-        : Uint8List(0);
+    final decryptedBytes =
+        await FileManager.readFile(file.localFile) ?? Uint8List(0);
     if (decryptedBytes.isEmpty) {
       // deleted file, handle in [uploadRemoteFile]
       return decryptedBytes;
@@ -263,7 +258,7 @@ class const SaberSyncInterface()
     final iv = IV.fromBase64(stows.iv.value);
 
     final encryptedData = await workerManager.execute(
-      file.localFile.path.endsWith(Editor.extensionOldJson)
+      file.localFile.endsWith(Editor.extensionOldJson)
           ? () async {
               final decrypted = utf8.decode(decryptedBytes);
               final encrypted = encrypter.encrypt(decrypted, iv: iv);
@@ -287,9 +282,9 @@ class const SaberSyncInterface()
     Uint8List encryptedBytes,
   ) async {
     DateTime lastModified;
-    try {
-      lastModified = file.localFile.lastModifiedSync();
-    } on FileSystemException {
+    if (await FileManager.doesFileExist(file.localFile)) {
+      lastModified = await FileManager.lastModified(file.localFile);
+    } else {
       lastModified = DateTime.now();
     }
     if (lastModified.isBefore(stows.fileSyncResyncEverythingDate.value)) {
@@ -465,7 +460,7 @@ class const SaberSyncInterface()
     required BestFile onEqualFiles,
     bool preferCache = true,
   }) async {
-    if (!file.localFile.existsSync()) {
+    if (!await FileManager.doesFileExist(file.localFile)) {
       // We either have a new remote file or a deleted local file
       return onLocalFileNotFound;
     }
@@ -493,7 +488,7 @@ class const SaberSyncInterface()
     }
 
     // File exists locally, check if it's newer than the remote file
-    final lastModifiedLocal = file.localFile.lastModifiedSync();
+    final lastModifiedLocal = await FileManager.lastModified(file.localFile);
     if (lastModifiedRemote.difference(lastModifiedLocal).abs() <
         const Duration(milliseconds: 500)) {
       return onEqualFiles;
@@ -556,10 +551,9 @@ class const SaberSyncInterface()
   static const _ignoredFiles = <String>['/Readme.md'];
 }
 
-class SaberSyncFile extends AbstractSyncFile<File, WebDavFile> {
-  late final relativeLocalPath = localFile.path.substring(
-    FileManager.documentsDirectory.length,
-  );
+class SaberSyncFile extends AbstractSyncFile<String, WebDavFile> {
+  /// The path of this file relative to [FileManager.documentsDirectory].
+  String get relativeLocalPath => localFile;
 
   late String remotePath;
 
@@ -572,8 +566,9 @@ class SaberSyncFile extends AbstractSyncFile<File, WebDavFile> {
   }
 
   static Future<SaberSyncFile> relative(String relativeFilePath) {
-    final localFile = FileManager.getFile(relativeFilePath);
-    return const SaberSyncInterface().getSyncFileFromLocalFile(localFile);
+    return const SaberSyncInterface().getSyncFileFromLocalFile(
+      relativeFilePath,
+    );
   }
 
   @override
@@ -582,10 +577,10 @@ class SaberSyncFile extends AbstractSyncFile<File, WebDavFile> {
 
   @override
   bool operator ==(Object other) =>
-      other is SaberSyncFile && other.localFile.path == localFile.path;
+      other is SaberSyncFile && other.localFile == localFile;
 
   @override
-  int get hashCode => localFile.path.hashCode;
+  int get hashCode => localFile.hashCode;
 }
 
 extension SaberSyncerComponent on SyncerComponent {

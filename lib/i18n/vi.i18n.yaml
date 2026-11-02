@@ -69,6 +69,9 @@ home:
     deleteName: Xóa $f
     delete: Xóa
     alsoDeleteContents: Các ghi chú bên trong thư mục này cũng sẽ bị xóa
+  folderColor:
+    changeColor: Đổi màu thư mục
+    reset: Mặc định
   sort:
     sortBy(OUTDATED): Sắp xếp theo
     nameAToZ(OUTDATED): Tên (A-Z)
@@ -171,6 +174,16 @@ settings:
     button: Quay về
   resyncEverything: Đồng bộ tất cả
   openDataDir: Mở thư mục Saber
+  backup:
+    exportBackup: Xuất bản sao lưu
+    exportBackupDescription: Lưu toàn bộ ghi chú và cài đặt vào một tệp zip
+    importBackup: Nhập bản sao lưu
+    importBackupDescription: Khôi phục ghi chú và cài đặt từ tệp sao lưu
+    importConfirm: Các ghi chú trùng tên sẽ bị ghi đè và cài đặt hiện tại sẽ bị thay thế. Bản sao lưu không chứa thông tin đăng nhập.
+    exporting: Đang tạo bản sao lưu...
+    importing: Đang khôi phục bản sao lưu...
+    importSuccess: Đã khôi phục bản sao lưu
+    importFailed: Tệp đã chọn không phải là bản sao lưu Saber hợp lệ
   customDataDir:
     cancel: Hủy
     select: Chọn

@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart' as flutter_quill;
 import 'package:keybinder/keybinder.dart';
 import 'package:logging/logging.dart';
+import 'package:one_dollar_unistroke_recognizer/one_dollar_unistroke_recognizer.dart';
 import 'package:path/path.dart' as p;
 import 'package:pdfrx/pdfrx.dart';
 import 'package:saber/components/canvas/_asset_cache.dart';
@@ -53,6 +54,19 @@ import 'package:sbn/change.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 
 typedef _PhotoInfo = ({Uint8List bytes, String extension});
+
+/// See [EditorState._pageWidgetCache].
+typedef _PageCacheEntry = ({
+  Widget widget,
+  EditorPage page,
+  Tool tool,
+  Stroke? stroke,
+  RecognizedUnistroke? detectedShape,
+  SelectResult? selection,
+  double scale,
+  int imagesLength,
+  EditorImage? backgroundImage,
+});
 
 class Editor extends StatefulWidget {
   new({super.key, String? path, this.customTitle, this.pdfPath})
@@ -1103,7 +1117,7 @@ class EditorState extends State<Editor> {
           SvgEditorImage(
             id: coreInfo.nextImageId++,
             svgString: utf8.decode(photoInfo.bytes),
-            svgFile: null,
+            svgRelPath: null,
             pageIndex: currentPageIndex,
             pageSize: coreInfo.pages[currentPageIndex].size,
             onMoveImage: onMoveImage,
@@ -1212,7 +1226,8 @@ class EditorState extends State<Editor> {
         backgroundImage: PdfEditorImage(
           id: coreInfo.nextImageId++,
           pdfBytes: null,
-          pdfFile: File(path),
+          pdfRelPath: null,
+          externalSourceFile: File(path),
           pdfPage: pdfPage.pageNumber - 1,
           pageIndex: coreInfo.pages.length,
           pageSize: pageSize,
@@ -1826,28 +1841,80 @@ class EditorState extends State<Editor> {
     );
   }
 
+  /// Caches the [Canvas] widget built for each page, keyed by page index.
+  ///
+  /// [_handleTransformation]-driven pan/zoom/fling rebuilds `pageBuilder`
+  /// for every visible page on every animation frame (this is how Flutter's
+  /// own `InteractiveViewer` works too), even though during a pure pan none
+  /// of `Canvas`'s constructor arguments actually change. Returning the
+  /// *same* widget instance when nothing relevant changed lets Flutter's
+  /// `identical()` fast path skip rebuilding that page's whole subtree
+  /// (including the QuillEditor), instead of reconstructing it from scratch
+  /// every frame.
+  ///
+  /// This is safe because strokes/text/single-image-drag already update via
+  /// mechanisms independent of widget rebuilds (`EditorPage.redrawStrokes()`
+  /// is a paint-level `Listenable` consumed directly by `CustomPaint`, and
+  /// `QuillEditor`/`_CanvasImageState` manage their own controllers/state) —
+  /// see the plan doc for the full analysis. `identical(cached.page, page)`
+  /// also means inserting/removing/reloading pages (which shifts indices or
+  /// creates new `EditorPage` objects) naturally busts the cache without
+  /// needing to hunt down every mutation call site.
+  ///
+  /// Residual risk: if some future code ever replaces an image *in place*
+  /// at the same list index without changing `images.length` or
+  /// `backgroundImage`'s identity, the cache could show stale content until
+  /// an unrelated key field (tool/stroke/selection/scale) changes.
+  final _pageWidgetCache = <int, _PageCacheEntry>{};
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Safety net: an inherited-widget change (e.g. MediaQuery on window
+    // resize/rotation, or Theme) could affect a page's layout/appearance in
+    // ways not captured by _PageCacheEntry's key, since a cache hit skips
+    // Canvas.build() (and its internal LayoutBuilder) entirely.
+    _pageWidgetCache.clear();
+  }
+
   Widget pageBuilder(BuildContext context, int pageIndex) {
     final page = coreInfo.pages[pageIndex];
     final currentStroke = Pen.currentStroke?.pageIndex == pageIndex
         ? Pen.currentStroke
         : null;
-    return Canvas(
+    final currentStrokeDetectedShape = currentTool is ShapePen && currentStroke != null
+        ? ShapePen.detectedShape
+        : null;
+    final currentSelection = () {
+      if (currentTool is! Select) return null;
+      final selectResult = (currentTool as Select).selectResult;
+      if (selectResult.pageIndex != pageIndex) return null;
+      return selectResult;
+    }();
+    final scale = _transformationController.value.approxScale;
+
+    final cached = _pageWidgetCache[pageIndex];
+    if (cached != null &&
+        identical(cached.page, page) &&
+        cached.tool == currentTool &&
+        cached.stroke == currentStroke &&
+        cached.detectedShape == currentStrokeDetectedShape &&
+        cached.selection == currentSelection &&
+        cached.scale == scale &&
+        cached.imagesLength == page.images.length &&
+        identical(cached.backgroundImage, page.backgroundImage)) {
+      return cached.widget;
+    }
+
+    final canvas = Canvas(
       path: coreInfo.filePath,
       page: page,
       pageIndex: pageIndex,
       textEditing: currentTool == Tool.textEditing,
       coreInfo: coreInfo,
       currentStroke: currentStroke,
-      currentStrokeDetectedShape:
-          currentTool is ShapePen && currentStroke != null
-          ? ShapePen.detectedShape
-          : null,
-      currentSelection: () {
-        if (currentTool is! Select) return null;
-        final selectResult = (currentTool as Select).selectResult;
-        if (selectResult.pageIndex != pageIndex) return null;
-        return selectResult;
-      }(),
+      currentStrokeDetectedShape: currentStrokeDetectedShape,
+      currentSelection: currentSelection,
       setAsBackground: (EditorImage image) {
         if (page.backgroundImage != null) {
           // restore previous background image as normal image
@@ -1863,8 +1930,20 @@ class EditorState extends State<Editor> {
         setState(() {});
       },
       currentTool: currentTool,
-      currentScale: _transformationController.value.approxScale,
+      currentScale: scale,
     );
+    _pageWidgetCache[pageIndex] = (
+      widget: canvas,
+      page: page,
+      tool: currentTool,
+      stroke: currentStroke,
+      detectedShape: currentStrokeDetectedShape,
+      selection: currentSelection,
+      scale: scale,
+      imagesLength: page.images.length,
+      backgroundImage: page.backgroundImage,
+    );
+    return canvas;
   }
 
   Widget pageManager(BuildContext context) {

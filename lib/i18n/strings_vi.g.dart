@@ -81,6 +81,7 @@ class _Translations$home$vi extends Translations$home$en {
 	@override late final _Translations$home$deleteNoteDialog$vi deleteNoteDialog = _Translations$home$deleteNoteDialog$vi._(_root);
 	@override late final _Translations$home$renameFolder$vi renameFolder = _Translations$home$renameFolder$vi._(_root);
 	@override late final _Translations$home$deleteFolder$vi deleteFolder = _Translations$home$deleteFolder$vi._(_root);
+	@override late final _Translations$home$folderColor$vi folderColor = _Translations$home$folderColor$vi._(_root);
 	@override late final _Translations$home$sort$vi sort = _Translations$home$sort$vi._(_root);
 	@override late final _Translations$home$layout$vi layout = _Translations$home$layout$vi._(_root);
 }
@@ -118,6 +119,7 @@ class _Translations$settings$vi extends Translations$settings$en {
 	@override late final _Translations$settings$reset$vi reset = _Translations$settings$reset$vi._(_root);
 	@override String get resyncEverything => 'Đồng bộ tất cả';
 	@override String get openDataDir => 'Mở thư mục Saber';
+	@override late final _Translations$settings$backup$vi backup = _Translations$settings$backup$vi._(_root);
 	@override late final _Translations$settings$customDataDir$vi customDataDir = _Translations$settings$customDataDir$vi._(_root);
 	@override String get autosaveDisabled => 'Không bao giờ';
 	@override String get shapeRecognitionDisabled => 'Không bao giờ';
@@ -373,6 +375,17 @@ class _Translations$home$deleteFolder$vi extends Translations$home$deleteFolder$
 	@override String get alsoDeleteContents => 'Các ghi chú bên trong thư mục này cũng sẽ bị xóa';
 }
 
+// Path: home.folderColor
+class _Translations$home$folderColor$vi extends Translations$home$folderColor$en {
+	_Translations$home$folderColor$vi._(TranslationsVi root) : this._root = root, super.internal(root);
+
+	final TranslationsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get changeColor => 'Đổi màu thư mục';
+	@override String get reset => 'Mặc định';
+}
+
 // Path: home.sort
 class _Translations$home$sort$vi extends Translations$home$sort$en {
 	_Translations$home$sort$vi._(TranslationsVi root) : this._root = root, super.internal(root);
@@ -528,6 +541,24 @@ class _Translations$settings$reset$vi extends Translations$settings$reset$en {
 	// Translations
 	@override String get title => 'Quay về cài đặt mặc định?';
 	@override String get button => 'Quay về';
+}
+
+// Path: settings.backup
+class _Translations$settings$backup$vi extends Translations$settings$backup$en {
+	_Translations$settings$backup$vi._(TranslationsVi root) : this._root = root, super.internal(root);
+
+	final TranslationsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get exportBackup => 'Xuất bản sao lưu';
+	@override String get exportBackupDescription => 'Lưu toàn bộ ghi chú và cài đặt vào một tệp zip';
+	@override String get importBackup => 'Nhập bản sao lưu';
+	@override String get importBackupDescription => 'Khôi phục ghi chú và cài đặt từ tệp sao lưu';
+	@override String get importConfirm => 'Các ghi chú trùng tên sẽ bị ghi đè và cài đặt hiện tại sẽ bị thay thế. Bản sao lưu không chứa thông tin đăng nhập.';
+	@override String get exporting => 'Đang tạo bản sao lưu...';
+	@override String get importing => 'Đang khôi phục bản sao lưu...';
+	@override String get importSuccess => 'Đã khôi phục bản sao lưu';
+	@override String get importFailed => 'Tệp đã chọn không phải là bản sao lưu Saber hợp lệ';
 }
 
 // Path: settings.customDataDir

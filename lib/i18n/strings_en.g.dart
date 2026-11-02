@@ -105,6 +105,7 @@ class Translations$home$en {
 	late final Translations$home$deleteNoteDialog$en deleteNoteDialog = Translations$home$deleteNoteDialog$en.internal(_root);
 	late final Translations$home$renameFolder$en renameFolder = Translations$home$renameFolder$en.internal(_root);
 	late final Translations$home$deleteFolder$en deleteFolder = Translations$home$deleteFolder$en.internal(_root);
+	late final Translations$home$folderColor$en folderColor = Translations$home$folderColor$en.internal(_root);
 	late final Translations$home$sort$en sort = Translations$home$sort$en.internal(_root);
 	late final Translations$home$layout$en layout = Translations$home$layout$en.internal(_root);
 }
@@ -150,6 +151,7 @@ class Translations$settings$en {
 	/// en: 'Open Saber folder'
 	String get openDataDir => 'Open Saber folder';
 
+	late final Translations$settings$backup$en backup = Translations$settings$backup$en.internal(_root);
 	late final Translations$settings$customDataDir$en customDataDir = Translations$settings$customDataDir$en.internal(_root);
 
 	/// en: 'Never'
@@ -559,6 +561,21 @@ class Translations$home$deleteFolder$en {
 	String get alsoDeleteContents => 'Also delete all notes inside this folder';
 }
 
+// Path: home.folderColor
+class Translations$home$folderColor$en {
+	Translations$home$folderColor$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Change folder color'
+	String get changeColor => 'Change folder color';
+
+	/// en: 'Default'
+	String get reset => 'Default';
+}
+
 // Path: home.sort
 class Translations$home$sort$en {
 	Translations$home$sort$en.internal(this._root);
@@ -845,6 +862,42 @@ class Translations$settings$reset$en {
 	String get button => 'Reset';
 }
 
+// Path: settings.backup
+class Translations$settings$backup$en {
+	Translations$settings$backup$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Export backup'
+	String get exportBackup => 'Export backup';
+
+	/// en: 'Save all notes and settings to a zip file'
+	String get exportBackupDescription => 'Save all notes and settings to a zip file';
+
+	/// en: 'Import backup'
+	String get importBackup => 'Import backup';
+
+	/// en: 'Restore notes and settings from a backup file'
+	String get importBackupDescription => 'Restore notes and settings from a backup file';
+
+	/// en: 'Notes with the same name will be overwritten and your settings will be replaced. Login details are not included in backups.'
+	String get importConfirm => 'Notes with the same name will be overwritten and your settings will be replaced. Login details are not included in backups.';
+
+	/// en: 'Creating backup...'
+	String get exporting => 'Creating backup...';
+
+	/// en: 'Restoring backup...'
+	String get importing => 'Restoring backup...';
+
+	/// en: 'Backup restored'
+	String get importSuccess => 'Backup restored';
+
+	/// en: 'The selected file is not a valid Saber backup'
+	String get importFailed => 'The selected file is not a valid Saber backup';
+}
+
 // Path: settings.customDataDir
 class Translations$settings$customDataDir$en {
 	Translations$settings$customDataDir$en.internal(this._root);
@@ -865,8 +918,8 @@ class Translations$settings$customDataDir$en {
 	/// en: 'Make sure syncing is complete before changing the folder'
 	String get mustBeDoneSyncing => 'Make sure syncing is complete before changing the folder';
 
-	/// en: 'This feature is currently only for developers. Using it will likely result in data loss.'
-	String get unsupported => 'This feature is currently only for developers. Using it will likely result in data loss.';
+	/// en: 'Your existing notes will be moved to the new location. Choosing a folder on external storage (e.g. an SD card) may make saving slower.'
+	String get unsupported => 'Your existing notes will be moved to the new location. Choosing a folder on external storage (e.g. an SD card) may make saving slower.';
 }
 
 // Path: login.form

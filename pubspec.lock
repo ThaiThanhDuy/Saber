@@ -1532,6 +1532,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.28.0"
+  saf_stream:
+    dependency: "direct main"
+    description:
+      name: saf_stream
+      sha256: d07728adb74ddc87f1052cb627cab3e961b4a58d15c7c010f1d8b9cc86f317b3
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.0"
+  saf_util:
+    dependency: "direct main"
+    description:
+      name: saf_util
+      sha256: "35cd99ec282f9fc68ec0fb35338315a7198250f8ff0d24006f8507a6aae3d344"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.0"
   saver_gallery:
     dependency: "direct main"
     description:
@@ -1652,7 +1668,7 @@ packages:
     source: hosted
     version: "7.2.0"
   shared_preferences:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: shared_preferences
       sha256: c3025c5534b01739267eb7d76959bbc25a6d10f6988e1c2a3036940133dd10bf

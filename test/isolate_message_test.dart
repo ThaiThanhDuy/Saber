@@ -28,7 +28,7 @@ void main() {
             SvgEditorImage(
               id: 0,
               svgString: '<svg height="100" width="100"></svg>',
-              svgFile: null,
+              svgRelPath: null,
               pageIndex: 0,
               pageSize: EditorPage.defaultSize,
               onMoveImage: null,

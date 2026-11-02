@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
+import 'package:saber/components/canvas/_asset_cache.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/inner_canvas.dart';
 import 'package:saber/components/canvas/invert_widget.dart';
@@ -46,31 +47,48 @@ class _PreviewCardState extends State<PreviewCard> {
     super.initState();
   }
 
+  String get _previewRelPath => '${widget.filePath}${Editor.extension}.p';
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    final imageFile = FileManager.getFile(
-      '${widget.filePath}${Editor.extension}.p',
-    );
     if (isThisATest) {
-      // Avoid FileImages in tests
-      thumbnail.image = imageFile.existsSync()
+      // Avoid FileImages/async loads in tests
+      final imageFile = FileManager.getFile(_previewRelPath);
+      final fileExists = imageFile.existsSync();
+      thumbnail.exists = fileExists;
+      thumbnail.image = fileExists
           ? MemoryImage(imageFile.readAsBytesSync())
           : null;
-    } else {
-      thumbnail.image = FileImage(imageFile);
+      return;
     }
+
+    thumbnail.image = SaberAssetImageProvider(_previewRelPath);
+    unawaited(_refreshThumbnailExists());
+  }
+
+  /// Asynchronously checks whether the preview file actually exists, since
+  /// [SaberAssetImageProvider] (unlike the `FileImage` it replaces) can't be
+  /// checked for existence synchronously.
+  Future<void> _refreshThumbnailExists() async {
+    final exists = await FileManager.doesFileExist(_previewRelPath);
+    if (!mounted) return;
+    if (thumbnail.exists == exists) return;
+    thumbnail.exists = exists;
+    thumbnail.markAsChanged();
   }
 
   StreamSubscription? fileWriteSubscription;
   void fileWriteListener(FileOperation event) {
     if (event.filePath != widget.filePath) return;
     if (event.type == .delete) {
+      thumbnail.exists = false;
       thumbnail.image = null;
     } else if (event.type == .write) {
       thumbnail.image?.evict();
-      thumbnail.markAsChanged();
+      thumbnail.image = SaberAssetImageProvider(_previewRelPath);
+      unawaited(_refreshThumbnailExists());
     } else {
       throw Exception('Unknown file operation type: ${event.type}');
     }
@@ -276,6 +294,11 @@ class _ThumbnailState extends ChangeNotifier {
   var updateCount = 0;
   ImageProvider? _image;
 
+  /// Whether the preview file is known to exist. Since [SaberAssetImageProvider]
+  /// (unlike the `FileImage` it replaces) can't be checked for existence
+  /// synchronously, this is refreshed asynchronously and cached here.
+  var exists = false;
+
   void markAsChanged() {
     ++updateCount;
     notifyListeners();
@@ -287,9 +310,5 @@ class _ThumbnailState extends ChangeNotifier {
     markAsChanged();
   }
 
-  bool get doesImageExist => switch (image) {
-    (final FileImage fileImage) => fileImage.file.existsSync(),
-    null => false,
-    _ => true,
-  };
+  bool get doesImageExist => image != null && exists;
 }

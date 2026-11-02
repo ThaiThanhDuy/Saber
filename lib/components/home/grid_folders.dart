@@ -2,16 +2,19 @@ import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:saber/components/home/delete_folder_button.dart';
+import 'package:saber/components/home/folder_color_button.dart';
 import 'package:saber/components/home/new_folder_dialog.dart';
 import 'package:saber/components/home/rename_folder_button.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
 import 'package:saber/data/extensions/list_extensions.dart';
+import 'package:saber/data/prefs.dart';
 import 'package:saber/i18n/strings.g.dart';
 
 class GridFolders extends StatelessWidget {
   const new({
     super.key,
     required this.isAtRoot,
+    required this.parentPath,
     required this.onTap,
     required this.crossAxisCount,
     required this.createFolder,
@@ -23,6 +26,10 @@ class GridFolders extends StatelessWidget {
   });
 
   final bool isAtRoot;
+
+  /// The path of the folder containing [folders], e.g. `/Folder`,
+  /// or an empty string for the root folder.
+  final String parentPath;
   final Function(String) onTap;
   final int crossAxisCount;
 
@@ -56,6 +63,7 @@ class GridFolders extends StatelessWidget {
           return _GridFolder(
             cardType: cardType,
             folderName: folderName,
+            folderPath: folderName == null ? null : '$parentPath/$folderName',
             createFolder: createFolder,
             doesFolderExist: doesFolderExist,
             renameFolder: renameFolder,
@@ -73,6 +81,7 @@ class _GridFolder extends StatefulWidget {
   const new({
     required this.cardType,
     required this.folderName,
+    required this.folderPath,
     required this.createFolder,
     required this.doesFolderExist,
     required this.renameFolder,
@@ -86,6 +95,7 @@ class _GridFolder extends StatefulWidget {
 
   final _FolderCardType cardType;
   final String? folderName;
+  final String? folderPath;
   final void Function(String) createFolder;
   final bool Function(String) doesFolderExist;
   final Future<void> Function(String oldName, String newName) renameFolder;
@@ -150,19 +160,27 @@ class _GridFolderState extends State<_GridFolder> {
                             .newFolder => t.home.newFolder.newFolder,
                             .realFolder => '',
                           },
-                          child: AdaptiveIcon(
-                            icon: switch (widget.cardType) {
-                              .backFolder => Icons.folder_open,
-                              .newFolder => Icons.create_new_folder,
-                              .realFolder => Icons.folder,
-                            },
-                            cupertinoIcon: switch (widget.cardType) {
-                              .backFolder => CupertinoIcons.folder_open,
-                              .newFolder =>
-                                CupertinoIcons.folder_fill_badge_plus,
-                              .realFolder => CupertinoIcons.folder_fill,
-                            },
-                            size: 50,
+                          child: ValueListenableBuilder(
+                            valueListenable: stows.folderColors,
+                            builder: (context, _, _) => AdaptiveIcon(
+                              color: widget.folderPath == null
+                                  ? null
+                                  : FolderColorButton.getColor(
+                                      widget.folderPath!,
+                                    ),
+                              icon: switch (widget.cardType) {
+                                .backFolder => Icons.folder_open,
+                                .newFolder => Icons.create_new_folder,
+                                .realFolder => Icons.folder,
+                              },
+                              cupertinoIcon: switch (widget.cardType) {
+                                .backFolder => CupertinoIcons.folder_open,
+                                .newFolder =>
+                                  CupertinoIcons.folder_fill_badge_plus,
+                                .realFolder => CupertinoIcons.folder_fill,
+                              },
+                              size: 50,
+                            ),
                           ),
                         ),
                       ),
@@ -207,6 +225,10 @@ class _GridFolderState extends State<_GridFolder> {
                                         );
                                         expanded.value = false;
                                       },
+                                    ),
+                                    FolderColorButton(
+                                      folderPath: widget.folderPath!,
+                                      afterChange: () => expanded.value = false,
                                     ),
                                     DeleteFolderButton(
                                       folderName: widget.folderName!,

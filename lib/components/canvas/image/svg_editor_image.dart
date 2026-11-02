@@ -6,14 +6,14 @@ class SvgEditorImage extends EditorImage {
   static final log = Logger('SvgEditorImage');
 
   @override
-  @Deprecated('Use the file directly instead')
+  @Deprecated('Use the relative asset path directly instead')
   AssetCache get assetCache => super.assetCache;
 
   new({
     required super.id,
     required super.assetCache,
     required String? svgString,
-    required File? svgFile,
+    required String? svgRelPath,
     required super.pageIndex,
     required super.pageSize,
     super.invertible,
@@ -28,14 +28,14 @@ class SvgEditorImage extends EditorImage {
     super.naturalSize,
     super.isThumbnail,
   }) : assert(
-         svgString != null || svgFile != null,
-         'svgFile must be set if svgString is null',
+         svgString != null || svgRelPath != null,
+         'svgRelPath must be set if svgString is null',
        ),
        super(extension: '.svg') {
     if (svgString != null) {
       svgLoader = SvgStringLoader(svgString);
     } else {
-      svgLoader = SvgFileLoader(svgFile!);
+      svgLoader = SaberSvgAssetLoader(svgRelPath!);
     }
   }
 
@@ -51,13 +51,11 @@ class SvgEditorImage extends EditorImage {
 
     final assetIndex = json['a'] as int?;
     final String? svgString;
-    File? svgFile;
+    String? svgRelPath;
     if (assetIndex != null) {
       if (inlineAssets == null) {
-        svgFile = FileManager.getFile(
-          '$sbnPath${Editor.extension}.$assetIndex',
-        );
-        svgString = assetCache.get(svgFile);
+        svgRelPath = '$sbnPath${Editor.extension}.$assetIndex';
+        svgString = assetCache.get(svgRelPath);
       } else {
         svgString = utf8.decode(inlineAssets[assetIndex]);
       }
@@ -74,7 +72,7 @@ class SvgEditorImage extends EditorImage {
           -1, // -1 will be replaced by EditorCoreInfo._handleEmptyImageIds()
       assetCache: assetCache,
       svgString: svgString,
-      svgFile: svgFile,
+      svgRelPath: svgRelPath,
       pageIndex: json['i'] ?? 0,
       pageSize: .infinite,
       invertible: json['v'] ?? true,
@@ -111,21 +109,28 @@ class SvgEditorImage extends EditorImage {
     assert(!json.containsKey('b'));
 
     final svgData = _extractSvg();
-    json['a'] = assets.add(svgData.string ?? svgData.file!);
+    json['a'] = assets.add(
+      svgData.string != null
+          ? svgData.string!
+          : NoteAssetPath(svgData.relPath!),
+    );
 
     return json;
   }
 
-  ({String? string, File? file}) _extractSvg() => switch (svgLoader) {
+  ({String? string, String? relPath}) _extractSvg() => switch (svgLoader) {
     (final SvgStringLoader loader) => (
       string: loader.provideSvg(null),
-      file: null,
+      relPath: null,
     ),
-    (final SvgFileLoader loader) => (string: null, file: loader.file),
+    (final SaberSvgAssetLoader loader) => (
+      string: null,
+      relPath: loader.relPath,
+    ),
     (_) => throw ArgumentError.value(
       svgLoader,
       'svgLoader',
-      'SvgEditorImage.toJson: svgLoader must be a SvgStringLoader or SvgFileLoader',
+      'SvgEditorImage.toJson: svgLoader must be a SvgStringLoader or SaberSvgAssetLoader',
     ),
   };
 
@@ -194,7 +199,7 @@ class SvgEditorImage extends EditorImage {
       // ignore: deprecated_member_use_from_same_package
       assetCache: assetCache,
       svgString: svgData.string,
-      svgFile: svgData.file,
+      svgRelPath: svgData.relPath,
       pageIndex: pageIndex,
       pageSize: .infinite,
       invertible: invertible,

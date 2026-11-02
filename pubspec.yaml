@@ -73,6 +73,8 @@ dependencies:
   share_plus: ^13.3.0
   file_picker: ^12.0.0
   android_file_picker:
+  saf_util: ^3.1.0
+  saf_stream: 4.0.0 # 4.0.1 requires jni ^1.0.2, incompatible with sentry_flutter's jni 0.14.2
 
   regexed_validator: ^2.0.0+1
 
@@ -100,6 +102,8 @@ dependencies:
   workmanager: ^0.10.7
 
   archive: ^4.0.3
+
+  shared_preferences: ^2.5.3
 
   flutter_sharing_intent: ^2.0.4
 

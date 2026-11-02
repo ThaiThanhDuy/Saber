@@ -7,9 +7,16 @@ class PdfEditorImage extends EditorImage {
   /// The first page is 0.
   final int pdfPage;
 
-  /// If the pdf needs to be loaded from disk, this is the File
-  /// that the pdf will be loaded from.
-  final File? pdfFile;
+  /// If the pdf needs to be loaded from disk, this is the path (relative to
+  /// [FileManager.documentsDirectory]) that the pdf will be loaded from.
+  /// Used when this pdf is an asset that already belongs to this note.
+  final String? pdfRelPath;
+
+  /// An external file (outside of Saber's own storage) that this pdf's
+  /// bytes came from, e.g. one the user just picked to import. Read
+  /// directly via `dart:io` (never through [FileManager], since it isn't
+  /// under [FileManager.documentsDirectory]).
+  final File? externalSourceFile;
 
   final _pdfDocument = ValueNotifier<PdfDocument?>(null);
 
@@ -19,7 +26,8 @@ class PdfEditorImage extends EditorImage {
     required super.id,
     required super.assetCache,
     required this.pdfBytes,
-    required this.pdfFile,
+    required this.pdfRelPath,
+    this.externalSourceFile,
     required this.pdfPage,
     required super.pageIndex,
     required super.pageSize,
@@ -38,8 +46,8 @@ class PdfEditorImage extends EditorImage {
          'naturalSize must be set for PdfEditorImage',
        ),
        assert(
-         pdfBytes != null || pdfFile != null,
-         'pdfFile must be set if pdfBytes is null',
+         pdfBytes != null || pdfRelPath != null || externalSourceFile != null,
+         'pdfRelPath or externalSourceFile must be set if pdfBytes is null',
        ),
        super(extension: '.pdf', srcRect: .zero);
 
@@ -55,13 +63,11 @@ class PdfEditorImage extends EditorImage {
 
     final assetIndex = json['a'] as int?;
     final Uint8List? pdfBytes;
-    File? pdfFile;
+    String? pdfRelPath;
     if (assetIndex != null) {
       if (inlineAssets == null) {
-        pdfFile = FileManager.getFile(
-          '$sbnPath${Editor.extension}.$assetIndex',
-        );
-        pdfBytes = assetCache.get(pdfFile);
+        pdfRelPath = '$sbnPath${Editor.extension}.$assetIndex';
+        pdfBytes = assetCache.get(pdfRelPath);
       } else {
         pdfBytes = inlineAssets[assetIndex];
       }
@@ -78,7 +84,7 @@ class PdfEditorImage extends EditorImage {
           -1, // -1 will be replaced by EditorCoreInfo._handleEmptyImageIds()
       assetCache: assetCache,
       pdfBytes: pdfBytes,
-      pdfFile: pdfFile,
+      pdfRelPath: pdfRelPath,
       pdfPage: json['pdfi'],
       pageIndex: json['i'] ?? 0,
       pageSize: .infinite,
@@ -109,7 +115,10 @@ class PdfEditorImage extends EditorImage {
     assert(!json.containsKey('a'));
     assert(!json.containsKey('b'));
 
-    json['a'] = assets.add(pdfFile ?? pdfBytes!);
+    json['a'] = assets.add(
+      externalSourceFile ??
+          (pdfRelPath != null ? NoteAssetPath(pdfRelPath!) : pdfBytes!),
+    );
     json['pdfi'] = pdfPage;
 
     return json;
@@ -128,8 +137,15 @@ class PdfEditorImage extends EditorImage {
     }
 
     assert(id != -1, 'id must be set before firstLoad is called');
+    if (externalSourceFile == null) {
+      // Always supply the bytes ourselves (via [FileManager], which knows
+      // how to read from either a real path or a SAF tree) rather than
+      // letting [PdfDocumentCache] fall back to opening [pdfRelPath] itself
+      // with `dart:io`.
+      pdfBytes ??= await FileManager.readFile(pdfRelPath!);
+    }
     _pdfDocument.value ??= await assetCache.pdfDocumentCache.load(
-      pdfFile?.path ?? 'inline_pdf_$id.pdf',
+      externalSourceFile?.path ?? pdfRelPath ?? 'inline_pdf_$id.pdf',
       pdfBytes: pdfBytes,
     );
     await _pdfDocument.value!.pages[pdfPage].ensureLoaded();
@@ -190,7 +206,8 @@ class PdfEditorImage extends EditorImage {
     assetCache: assetCache,
     pdfBytes: pdfBytes,
     pdfPage: pdfPage,
-    pdfFile: pdfFile,
+    pdfRelPath: pdfRelPath,
+    externalSourceFile: externalSourceFile,
     pageIndex: pageIndex,
     pageSize: .infinite,
     invertible: invertible,

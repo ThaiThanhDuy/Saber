@@ -56,13 +56,11 @@ class PngEditorImage extends EditorImage {
   }) {
     final assetIndex = json['a'] as int?;
     final Uint8List? bytes;
-    File? imageFile;
+    String? assetRelPath;
     if (assetIndex != null) {
       if (inlineAssets == null) {
-        imageFile = FileManager.getFile(
-          '$sbnPath${Editor.extension}.$assetIndex',
-        );
-        bytes = assetCache.get(imageFile);
+        assetRelPath = '$sbnPath${Editor.extension}.$assetIndex';
+        bytes = assetCache.get(assetRelPath);
       } else {
         bytes = inlineAssets[assetIndex];
       }
@@ -75,8 +73,8 @@ class PngEditorImage extends EditorImage {
       bytes = Uint8List(0);
     }
     assert(
-      bytes != null || imageFile != null,
-      'Either bytes or imageFile must be non-null',
+      bytes != null || assetRelPath != null,
+      'Either bytes or assetRelPath must be non-null',
     );
 
     return PngEditorImage(
@@ -86,7 +84,7 @@ class PngEditorImage extends EditorImage {
       extension: json['e'] ?? '.jpg',
       imageProvider: bytes != null
           ? MemoryImage(bytes) as ImageProvider
-          : FileImage(imageFile!),
+          : SaberAssetImageProvider(assetRelPath!),
       pageIndex: json['i'] ?? 0,
       pageSize: .infinite,
       invertible: json['v'] ?? true,
@@ -129,8 +127,12 @@ class PngEditorImage extends EditorImage {
       final Uint8List bytes;
       if (imageProvider is MemoryImage) {
         bytes = (imageProvider as MemoryImage).bytes;
-      } else if (imageProvider is FileImage) {
-        bytes = await (imageProvider as FileImage).file.readAsBytes();
+      } else if (imageProvider is SaberAssetImageProvider) {
+        bytes =
+            await FileManager.readFile(
+              (imageProvider as SaberAssetImageProvider).relPath,
+            ) ??
+            Uint8List(0);
       } else {
         throw Exception(
           'EditorImage.getImage: imageProvider is ${imageProvider.runtimeType}',
@@ -152,10 +154,13 @@ class PngEditorImage extends EditorImage {
       if (naturalSize.width != reducedSize.width && !isThumbnail) {
         await null; // wait for next event-loop iteration
 
-        final resizedByteData = await resizeImage(
-          bytes,
-          width: reducedSize.width.toInt(),
-          height: reducedSize.height.toInt(),
+        final resizedByteData = await workerManager.execute(
+          () => resizeImage(
+            bytes,
+            width: reducedSize.width.toInt(),
+            height: reducedSize.height.toInt(),
+          ),
+          priority: WorkPriority.regular,
         );
         if (resizedByteData != null) {
           imageProvider = MemoryImage(resizedByteData.buffer.asUint8List());

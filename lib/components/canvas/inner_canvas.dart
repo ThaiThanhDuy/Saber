@@ -57,6 +57,17 @@ class InnerCanvas extends StatefulWidget {
 }
 
 class _InnerCanvasState extends State<InnerCanvas> {
+  // [QuillEditor.scrollController] is required (even though [scrollable] is
+  // false below), so this exists purely to avoid allocating a new
+  // [ScrollController] on every build/scroll frame.
+  final _quillScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _quillScrollController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -97,7 +108,7 @@ class _InnerCanvasState extends State<InnerCanvas> {
                 bottom: widget.coreInfo.lineHeight * 0.5,
               ),
             ),
-            scrollController: ScrollController(),
+            scrollController: _quillScrollController,
             focusNode: widget.coreInfo.pages[widget.pageIndex].quill.focusNode,
           )
         : null;
